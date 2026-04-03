@@ -1,0 +1,1337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nail the Polish</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #FDF6F0;
+    --text: #2D2226;
+    --text-light: #8A7178;
+    --accent: #C4536A;
+    --accent-light: #F2D0D5;
+    --card: #FFFFFF;
+    --border: #E8DDD5;
+    --shadow: 0 4px 24px rgba(45, 34, 38, 0.08);
+    --shadow-lg: 0 12px 48px rgba(45, 34, 38, 0.12);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-image: radial-gradient(circle at 20% 30%, rgba(196, 83, 106, 0.04) 0%, transparent 50%),
+                      radial-gradient(circle at 80% 70%, rgba(196, 83, 106, 0.03) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 48px 24px 80px;
+    position: relative;
+    z-index: 1;
+  }
+
+  header {
+    text-align: center;
+    margin-bottom: 48px;
+    animation: fadeDown 0.8s ease;
+  }
+
+  @keyframes fadeDown {
+    from { opacity: 0; transform: translateY(-16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes scaleIn {
+    from { opacity: 0; transform: scale(0.9); }
+    to { opacity: 1; transform: scale(1); }
+  }
+  @keyframes popIn {
+    0% { transform: scale(0); opacity: 0; }
+    70% { transform: scale(1.15); }
+    100% { transform: scale(1); opacity: 1; }
+  }
+
+  .logo { display: inline-flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+  .logo-icon { width: 36px; height: 36px; }
+
+  h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: 2.6rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--text);
+  }
+  h1 em { color: var(--accent); font-style: italic; }
+
+  .subtitle {
+    color: var(--text-light);
+    font-size: 0.95rem;
+    margin-top: 8px;
+    font-weight: 300;
+    letter-spacing: 0.02em;
+  }
+
+  /* Upload Area */
+  .upload-zone {
+    border: 2px dashed var(--border);
+    border-radius: 20px;
+    padding: 56px 32px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background: var(--card);
+    position: relative;
+    overflow: hidden;
+    animation: fadeUp 0.8s ease 0.15s both;
+  }
+  .upload-zone:hover, .upload-zone.dragover {
+    border-color: var(--accent);
+    background: #FFF9FA;
+    transform: translateY(-2px);
+    box-shadow: var(--shadow);
+  }
+  .upload-zone.has-image {
+    padding: 0;
+    border-style: solid;
+    border-color: var(--border);
+    cursor: default;
+  }
+  .upload-zone.has-image:hover {
+    transform: none;
+    box-shadow: none;
+  }
+  .upload-icon { width: 56px; height: 56px; margin: 0 auto 16px; opacity: 0.7; }
+  .upload-zone h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.3rem;
+    font-weight: 400;
+    margin-bottom: 6px;
+  }
+  .upload-zone p { color: var(--text-light); font-size: 0.85rem; font-weight: 300; }
+  .upload-zone input { display: none; }
+  .upload-prompt { transition: opacity 0.3s; }
+
+  /* Image preview as canvas for picking */
+  .preview-container {
+    display: none;
+    position: relative;
+  }
+  .preview-container canvas {
+    display: block;
+    width: 100%;
+    border-radius: 18px;
+    cursor: crosshair;
+  }
+  .preview-container canvas.default-cursor {
+    cursor: default;
+  }
+
+  /* Toolbar over image */
+  .image-toolbar {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    display: flex;
+    gap: 6px;
+    z-index: 5;
+  }
+  .toolbar-btn {
+    background: rgba(255,255,255,0.92);
+    backdrop-filter: blur(8px);
+    border: 1px solid var(--border);
+    padding: 8px 14px;
+    border-radius: 100px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 500;
+    cursor: pointer;
+    color: var(--text);
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .toolbar-btn:hover {
+    background: #fff;
+    box-shadow: var(--shadow);
+  }
+  .toolbar-btn.active {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+  }
+  .toolbar-btn svg { width: 14px; height: 14px; }
+
+  /* Dropper hint banner */
+  .dropper-hint {
+    display: none;
+    position: absolute;
+    bottom: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(45, 34, 38, 0.82);
+    backdrop-filter: blur(8px);
+    color: #fff;
+    padding: 8px 18px;
+    border-radius: 100px;
+    font-size: 0.78rem;
+    font-weight: 400;
+    z-index: 5;
+    pointer-events: none;
+    animation: fadeUp 0.3s ease;
+    white-space: nowrap;
+  }
+  .dropper-hint.visible { display: block; }
+
+  /* Magnifier loupe */
+  .loupe {
+    display: none;
+    position: absolute;
+    width: 90px;
+    height: 90px;
+    border-radius: 50%;
+    border: 3px solid #fff;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+    pointer-events: none;
+    z-index: 10;
+    overflow: hidden;
+    image-rendering: pixelated;
+  }
+  .loupe canvas {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+  }
+  .loupe-crosshair {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 12px; height: 12px;
+    border: 2px solid rgba(255,255,255,0.9);
+    border-radius: 50%;
+    box-shadow: 0 0 0 1px rgba(0,0,0,0.3);
+  }
+  .loupe-color {
+    position: absolute;
+    bottom: -28px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(45, 34, 38, 0.82);
+    color: #fff;
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-size: 0.65rem;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+
+  /* Loading */
+  .loading-section {
+    display: none;
+    text-align: center;
+    padding: 48px 0;
+    animation: fadeUp 0.5s ease;
+  }
+  .spinner {
+    width: 48px; height: 48px;
+    border: 3px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto 16px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-section p {
+    color: var(--text-light);
+    font-size: 0.9rem;
+    font-style: italic;
+    font-family: 'Playfair Display', serif;
+  }
+
+  /* Colors Extracted */
+  .extracted-section {
+    display: none;
+    margin-top: 32px;
+    animation: fadeUp 0.6s ease;
+  }
+
+  .section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+  }
+
+  .section-label {
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--text-light);
+  }
+
+  .clear-colors-btn {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.72rem;
+    font-weight: 500;
+    color: var(--text-light);
+    background: none;
+    border: 1px solid var(--border);
+    padding: 4px 12px;
+    border-radius: 100px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .clear-colors-btn:hover {
+    color: var(--accent);
+    border-color: var(--accent);
+  }
+
+  .color-chips {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 36px;
+  }
+  .color-chip {
+    width: 48px; height: 48px;
+    border-radius: 50%;
+    border: 3px solid #fff;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    cursor: pointer;
+    transition: all 0.25s;
+    position: relative;
+  }
+  .color-chip.picked {
+    animation: popIn 0.35s ease both;
+  }
+  .color-chip:hover {
+    transform: scale(1.15);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+  }
+  .color-chip.active {
+    border-color: var(--accent);
+    transform: scale(1.15);
+    box-shadow: 0 4px 16px rgba(196, 83, 106, 0.3);
+  }
+  .color-chip .chip-remove {
+    position: absolute;
+    top: -6px; right: -6px;
+    width: 18px; height: 18px;
+    background: var(--text);
+    color: #fff;
+    border-radius: 50%;
+    font-size: 11px;
+    line-height: 18px;
+    text-align: center;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+  .color-chip:hover .chip-remove { opacity: 1; }
+  .color-chip .hex-tip {
+    position: absolute;
+    bottom: -24px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 0.65rem;
+    color: var(--text-light);
+    white-space: nowrap;
+    opacity: 0;
+    transition: opacity 0.2s;
+    font-weight: 500;
+  }
+  .color-chip:hover .hex-tip,
+  .color-chip.active .hex-tip { opacity: 1; }
+
+  /* Results */
+  .results-section {
+    display: none;
+    animation: fadeUp 0.6s ease;
+  }
+  .polish-grid { display: grid; gap: 14px; }
+  .polish-card {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    background: var(--card);
+    border-radius: 16px;
+    padding: 18px 20px;
+    border: 1px solid var(--border);
+    transition: all 0.25s;
+    animation: scaleIn 0.4s ease both;
+  }
+  .polish-card:nth-child(1) { animation-delay: 0.05s; }
+  .polish-card:nth-child(2) { animation-delay: 0.1s; }
+  .polish-card:nth-child(3) { animation-delay: 0.15s; }
+  .polish-card:nth-child(4) { animation-delay: 0.2s; }
+  .polish-card:nth-child(5) { animation-delay: 0.25s; }
+  .polish-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow);
+    border-color: transparent;
+  }
+  .polish-swatch {
+    width: 52px; height: 52px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    position: relative;
+    box-shadow: inset 0 -4px 8px rgba(0,0,0,0.12), 0 2px 6px rgba(0,0,0,0.08);
+  }
+  .polish-swatch::after {
+    content: '';
+    position: absolute;
+    top: 6px; left: 10px;
+    width: 16px; height: 10px;
+    background: rgba(255,255,255,0.35);
+    border-radius: 50%;
+    transform: rotate(-30deg);
+  }
+  .polish-info { flex: 1; min-width: 0; }
+  .polish-name {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.05rem;
+    font-weight: 600;
+    margin-bottom: 2px;
+    color: var(--text);
+  }
+  .polish-brand {
+    font-size: 0.78rem;
+    color: var(--text-light);
+    font-weight: 400;
+    letter-spacing: 0.02em;
+  }
+  .polish-right {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+  .polish-match {
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--accent);
+    background: var(--accent-light);
+    padding: 4px 10px;
+    border-radius: 100px;
+    white-space: nowrap;
+  }
+  .buy-link {
+    font-size: 0.72rem;
+    font-weight: 500;
+    color: var(--text-light);
+    text-decoration: none;
+    padding: 3px 10px;
+    border: 1px solid var(--border);
+    border-radius: 100px;
+    transition: all 0.2s;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .buy-link:hover {
+    color: var(--accent);
+    border-color: var(--accent);
+    background: #FFF9FA;
+  }
+  .buy-link svg { width: 10px; height: 10px; }
+
+  .no-results {
+    text-align: center;
+    padding: 32px;
+    color: var(--text-light);
+    font-style: italic;
+  }
+
+  .footer {
+    text-align: center;
+    margin-top: 56px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+    color: var(--text-light);
+    font-size: 0.75rem;
+    letter-spacing: 0.04em;
+    animation: fadeUp 0.8s ease 0.3s both;
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <header>
+    <div class="logo">
+      <svg class="logo-icon" viewBox="0 0 36 36" fill="none">
+        <ellipse cx="18" cy="28" rx="7" ry="4" fill="#F2D0D5"/>
+        <rect x="15" y="4" width="6" height="12" rx="3" fill="#C4536A"/>
+        <rect x="13" y="14" width="10" height="16" rx="5" fill="#C4536A"/>
+        <rect x="14" y="15" width="8" height="14" rx="4" fill="#D4687E"/>
+        <rect x="16" y="16" width="3" height="6" rx="1.5" fill="rgba(255,255,255,0.3)"/>
+      </svg>
+    </div>
+    <h1>Polish <em>Match</em></h1>
+    <p class="subtitle">Upload any photo — find the perfect nail color</p>
+  </header>
+
+  <div class="upload-zone" id="uploadZone">
+    <div class="upload-prompt" id="uploadPrompt">
+      <svg class="upload-icon" viewBox="0 0 56 56" fill="none">
+        <rect x="4" y="4" width="48" height="48" rx="12" stroke="#C4536A" stroke-width="1.5" stroke-dasharray="4 3"/>
+        <path d="M28 20v16M20 28h16" stroke="#C4536A" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+      <h2>Drop your photo here</h2>
+      <p>Nail inspo, outfit, sunset — anything with color</p>
+    </div>
+    <div class="preview-container" id="previewContainer">
+      <canvas id="previewCanvas"></canvas>
+      <div class="image-toolbar">
+        <button class="toolbar-btn" id="btnAutoDetect" title="Auto-detect dominant colors">
+          <svg viewBox="0 0 16 16" fill="none"><circle cx="4" cy="4" r="2.5" fill="currentColor" opacity=".6"/><circle cx="12" cy="4" r="2.5" fill="currentColor" opacity=".8"/><circle cx="8" cy="12" r="2.5" fill="currentColor"/></svg>
+          Auto
+        </button>
+        <button class="toolbar-btn active" id="btnDropper" title="Pick colors from the image">
+          <svg viewBox="0 0 16 16" fill="none"><path d="M13.5 2.5a1.5 1.5 0 00-2.12 0L9.5 4.38 7.62 2.5l-1.06 1.06 1.06 1.06-5.12 5.13a1 1 0 00-.29.6L2 13l2.65-.21a1 1 0 00.6-.29l5.13-5.12 1.06 1.06 1.06-1.06L10.62 5.5l1.88-1.88a1.5 1.5 0 000-2.12z" fill="currentColor"/></svg>
+          Pick
+        </button>
+        <button class="toolbar-btn" id="btnChangePhoto" title="Change photo">
+          <svg viewBox="0 0 16 16" fill="none"><path d="M13.5 8A5.5 5.5 0 013 8m0 0l2-2m-2 2l2 2M2.5 8A5.5 5.5 0 0113 8m0 0l-2 2m2-2l-2-2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+      <div class="dropper-hint" id="dropperHint">Tap on the image to pick a color</div>
+      <div class="loupe" id="loupe">
+        <canvas id="loupeCanvas" width="90" height="90"></canvas>
+        <div class="loupe-crosshair"></div>
+        <div class="loupe-color" id="loupeColor"></div>
+      </div>
+    </div>
+    <input type="file" id="fileInput" accept="image/*">
+  </div>
+
+  <div class="loading-section" id="loadingSection">
+    <div class="spinner"></div>
+    <p>Analyzing your colors…</p>
+  </div>
+
+  <div class="extracted-section" id="extractedSection">
+    <div class="section-header">
+      <div class="section-label">Your colors</div>
+      <button class="clear-colors-btn" id="clearColorsBtn">Clear all</button>
+    </div>
+    <div class="color-chips" id="colorChips"></div>
+  </div>
+
+  <div class="results-section" id="resultsSection">
+    <div class="section-label" style="margin-bottom:14px">Matching nail polishes</div>
+    <div class="polish-grid" id="polishGrid"></div>
+  </div>
+
+  <div class="footer">
+    Colors extracted from your image · Matched to popular polish shades
+  </div>
+</div>
+
+<canvas id="colorCanvas" style="display:none;"></canvas>
+
+<script>
+// ─── Nail polish database ───
+const POLISH_DB = [
+  // ═══ REDS ═══
+  { name: "Big Apple Red", brand: "OPI", hex: "#C41230" },
+  { name: "Cajun Shrimp", brand: "OPI", hex: "#E35545" },
+  { name: "Red My Fortune Cookie", brand: "OPI", hex: "#B91C2A" },
+  { name: "An Affair in Red Square", brand: "OPI", hex: "#9B1B2D" },
+  { name: "I'm Not Really a Waitress", brand: "OPI", hex: "#A81829" },
+  { name: "Lady Bug", brand: "OPI", hex: "#D62828" },
+  { name: "The Thrill of Brazil", brand: "OPI", hex: "#D72028" },
+  { name: "Color So Hot It Berns", brand: "OPI", hex: "#B51D2A" },
+  { name: "Red Hot Rio", brand: "OPI", hex: "#C91A2B" },
+  { name: "Got the Blues for Red", brand: "OPI", hex: "#8C1A28" },
+  { name: "Amore at the Grand Canal", brand: "OPI", hex: "#A11B28" },
+  { name: "Forever Yummy", brand: "Essie", hex: "#B22234" },
+  { name: "Russian Roulette", brand: "Essie", hex: "#A01D26" },
+  { name: "Scarlett O'Hara", brand: "Essie", hex: "#8B1A1A" },
+  { name: "Really Red", brand: "Essie", hex: "#C62030" },
+  { name: "Not Red-y for Bed", brand: "Essie", hex: "#B42535" },
+  { name: "Aperitif", brand: "Essie", hex: "#A8222C" },
+  { name: "Red Obsession", brand: "Chanel", hex: "#990000" },
+  { name: "Pirate", brand: "Chanel", hex: "#8B0D12" },
+  { name: "Dragon", brand: "Chanel", hex: "#C21E28" },
+  { name: "Relentlessly Red", brand: "MAC", hex: "#D42038" },
+  { name: "Ruby Pumps", brand: "China Glaze", hex: "#8B1520" },
+  { name: "Salsa", brand: "China Glaze", hex: "#C11E24" },
+  { name: "Posh", brand: "Revlon", hex: "#A01828" },
+  { name: "Red", brand: "Zoya", hex: "#BE1A28" },
+  { name: "Sooki", brand: "Zoya", hex: "#C81A22" },
+  { name: "Monroe", brand: "Zoya", hex: "#9F1520" },
+  { name: "Delicious", brand: "ORLY", hex: "#AA1825" },
+  { name: "Red Carpet", brand: "ORLY", hex: "#B51C22" },
+  { name: "Red Flare", brand: "ORLY", hex: "#CC2230" },
+  // ═══ DARK REDS / OXBLOOD ═══
+  { name: "Malaga Wine", brand: "OPI", hex: "#6B2242" },
+  { name: "We the Female", brand: "OPI", hex: "#7B1A28" },
+  { name: "Ginger Bells", brand: "OPI", hex: "#8B2020" },
+  { name: "Bordeaux", brand: "Essie", hex: "#5C1A22" },
+  { name: "Shearling Darling", brand: "Essie", hex: "#6E1E1E" },
+  { name: "Berry Hard", brand: "Essie", hex: "#6A1B2A" },
+  { name: "Vamp", brand: "Chanel", hex: "#3A0E14" },
+  { name: "Masai Red", brand: "Zoya", hex: "#7A1A1A" },
+  { name: "Pepper", brand: "Zoya", hex: "#651818" },
+  { name: "Ravishing Red", brand: "Revlon", hex: "#891820" },
+  // ═══ PINKS — LIGHT / PASTEL ═══
+  { name: "Mod About You", brand: "OPI", hex: "#F0A1B7" },
+  { name: "Pink-ing of You", brand: "OPI", hex: "#E8879B" },
+  { name: "Princesses Rule!", brand: "OPI", hex: "#F7C6D4" },
+  { name: "It's a Girl!", brand: "OPI", hex: "#F5BDD2" },
+  { name: "Getting Nadi on My Honeymoon", brand: "OPI", hex: "#F2AEBF" },
+  { name: "Tagus in That Selfie!", brand: "OPI", hex: "#F6C4CF" },
+  { name: "Mademoiselle", brand: "Essie", hex: "#F5D5D0" },
+  { name: "Fiji", brand: "Essie", hex: "#F4B0C1" },
+  { name: "Pinking Up the Pieces", brand: "Essie", hex: "#F2B4C0" },
+  { name: "Sugar Daddy", brand: "Essie", hex: "#F6C8D0" },
+  { name: "Hi Maintenance", brand: "Essie", hex: "#F0A6B4" },
+  { name: "Flirty Lingerie", brand: "Sally Hansen", hex: "#F2C0C8" },
+  { name: "Tickled Pink", brand: "Sally Hansen", hex: "#F5B5C0" },
+  { name: "Arden", brand: "Zoya", hex: "#F4AFC0" },
+  { name: "Dot", brand: "Zoya", hex: "#F5C1CE" },
+  { name: "Kiss the Bride", brand: "ORLY", hex: "#F2C6D0" },
+  // ═══ PINKS — MEDIUM ═══
+  { name: "Suzi Shops & Island Hops", brand: "OPI", hex: "#E06B8B" },
+  { name: "Aphrodite's Pink Nightie", brand: "OPI", hex: "#D77E96" },
+  { name: "Cozu-Melted in the Sun", brand: "OPI", hex: "#D56F8A" },
+  { name: "Pink Friday", brand: "OPI", hex: "#F48FB1" },
+  { name: "Cascade Cool", brand: "Essie", hex: "#D787A3" },
+  { name: "Marathin", brand: "Essie", hex: "#DA7A96" },
+  { name: "In Stitches", brand: "Essie", hex: "#E0859E" },
+  { name: "Petal Soft", brand: "China Glaze", hex: "#E08BA0" },
+  { name: "Eden", brand: "Zoya", hex: "#D87A90" },
+  // ═══ PINKS — HOT / MAGENTA ═══
+  { name: "That's Hot Pink", brand: "Essie", hex: "#FF4081" },
+  { name: "Shorts Story", brand: "Essie", hex: "#FF6B8A" },
+  { name: "Haute Pink", brand: "Sally Hansen", hex: "#E74D8A" },
+  { name: "Magenta Muse", brand: "CND Vinylux", hex: "#C2185B" },
+  { name: "Girls Just Want to Play", brand: "OPI", hex: "#D81B60" },
+  { name: "Strawberry Margarita", brand: "OPI", hex: "#E0356E" },
+  { name: "GPS I Love You", brand: "OPI", hex: "#CC2E6B" },
+  { name: "Watermelon", brand: "Essie", hex: "#E93C6A" },
+  { name: "Bachelorette Bash", brand: "Essie", hex: "#D73B68" },
+  { name: "Rich & Famous", brand: "China Glaze", hex: "#D02E62" },
+  { name: "Pink Voltage", brand: "China Glaze", hex: "#FF2D78" },
+  { name: "That's Berry Daring", brand: "China Glaze", hex: "#C43068" },
+  { name: "Charisma", brand: "Zoya", hex: "#CE3560" },
+  { name: "Dana", brand: "Zoya", hex: "#D63870" },
+  { name: "Neon Heat", brand: "ORLY", hex: "#FF3875" },
+  // ═══ PINKS — DUSTY / MAUVE ═══
+  { name: "Tickle My France-y", brand: "OPI", hex: "#C9A68F" },
+  { name: "You've Got Nata On Me", brand: "OPI", hex: "#C89FA0" },
+  { name: "Somewhere Over the Rainbow Mountains", brand: "OPI", hex: "#B8878E" },
+  { name: "Angora Cardi", brand: "Essie", hex: "#9E4B6C" },
+  { name: "Island Hopping", brand: "Essie", hex: "#B87888" },
+  { name: "Ladyfinger", brand: "Essie", hex: "#C49898" },
+  { name: "Eternal Optimist", brand: "Essie", hex: "#C09090" },
+  { name: "My Nightly Craving", brand: "ORLY", hex: "#A67580" },
+  { name: "Brigitte", brand: "Zoya", hex: "#B08488" },
+  // ═══ NUDES / SHEERS ═══
+  { name: "Bubble Bath", brand: "OPI", hex: "#F2DDD8" },
+  { name: "Funny Bunny", brand: "OPI", hex: "#F5E6E0" },
+  { name: "Put It in Neutral", brand: "OPI", hex: "#C4A882" },
+  { name: "Samoan Sand", brand: "OPI", hex: "#D4B5A0" },
+  { name: "Tiramisu for Two", brand: "OPI", hex: "#A67B5B" },
+  { name: "Pale to the Chief", brand: "OPI", hex: "#E8CFC0" },
+  { name: "Passion", brand: "OPI", hex: "#ECD2CA" },
+  { name: "Coney Island Cotton Candy", brand: "OPI", hex: "#F0D8D2" },
+  { name: "Ballet Slippers", brand: "Essie", hex: "#F0D4D0" },
+  { name: "Topless & Barefoot", brand: "Essie", hex: "#D4A68C" },
+  { name: "Sand Tropez", brand: "Essie", hex: "#CEB8A2" },
+  { name: "Spin the Bottle", brand: "Essie", hex: "#BFA08A" },
+  { name: "Bare My Soul", brand: "Essie", hex: "#C9A68A" },
+  { name: "Allure", brand: "Essie", hex: "#D9B8AA" },
+  { name: "Picked Perfect", brand: "Essie", hex: "#DFC0B0" },
+  { name: "Skinny Dip", brand: "Essie", hex: "#E4C8B8" },
+  { name: "Not Just a Pretty Face", brand: "Essie", hex: "#D8BAA5" },
+  { name: "Limo-scene", brand: "Essie", hex: "#DCBEA8" },
+  { name: "Romper Room", brand: "Essie", hex: "#E5C5B5" },
+  { name: "Naked Truth", brand: "Sally Hansen", hex: "#CCAB95" },
+  { name: "Buff", brand: "Sally Hansen", hex: "#D4BAA2" },
+  { name: "Chantal", brand: "Zoya", hex: "#E0C5B5" },
+  { name: "Taylor", brand: "Zoya", hex: "#D2B4A0" },
+  { name: "Sue", brand: "Zoya", hex: "#CFA58E" },
+  { name: "Snuggle", brand: "ORLY", hex: "#D9BCA8" },
+  { name: "Country Club Khaki", brand: "ORLY", hex: "#C5A888" },
+  { name: "Organdi", brand: "Chanel", hex: "#E8D0C0" },
+  { name: "Ballerina", brand: "Chanel", hex: "#E5C8B8" },
+  // ═══ CORALS / ORANGES ═══
+  { name: "Are We There Yet?", brand: "OPI", hex: "#F4845F" },
+  { name: "Crawfishin' for a Compliment", brand: "OPI", hex: "#E87461" },
+  { name: "Toucan Do It If You Try", brand: "OPI", hex: "#F56C3E" },
+  { name: "It's a Piazza Cake", brand: "OPI", hex: "#E86C52" },
+  { name: "My Chihuahua Bites!", brand: "OPI", hex: "#E87058" },
+  { name: "Hot & Spicy", brand: "Essie", hex: "#E05A30" },
+  { name: "Tart Deco", brand: "Essie", hex: "#F58F7B" },
+  { name: "Peach Daiquiri", brand: "Essie", hex: "#F6A886" },
+  { name: "Sunrise Bedtime", brand: "Essie", hex: "#E8734A" },
+  { name: "Freedom of Peach", brand: "OPI", hex: "#F3A683" },
+  { name: "Fear & Desire", brand: "Essie", hex: "#E8805E" },
+  { name: "Check In to Check Out", brand: "Essie", hex: "#EA7855" },
+  { name: "Saturday Disco Fever", brand: "Essie", hex: "#F08058" },
+  { name: "On the Same Wavelength", brand: "Essie", hex: "#E47050" },
+  { name: "Orange, It's Obvious!", brand: "China Glaze", hex: "#F06838" },
+  { name: "Peachy Keen", brand: "China Glaze", hex: "#F09070" },
+  { name: "Tangerine Scene", brand: "Sally Hansen", hex: "#F07840" },
+  { name: "Arizona", brand: "Zoya", hex: "#E86848" },
+  { name: "Thandie", brand: "Zoya", hex: "#E87A5A" },
+  { name: "Ablaze", brand: "ORLY", hex: "#E56838" },
+  { name: "Melt Your Popsicle", brand: "ORLY", hex: "#F47048" },
+  // ═══ PEACH / APRICOT ═══
+  { name: "Tutti Frutti Tonga", brand: "OPI", hex: "#F4A090" },
+  { name: "A Great Opera-tunity", brand: "OPI", hex: "#EF9888" },
+  { name: "Peaches & Cream", brand: "Sally Hansen", hex: "#F4B8A0" },
+  { name: "A Crewed Interest", brand: "Essie", hex: "#F0A090" },
+  { name: "Peach Side Babe", brand: "Essie", hex: "#F5B098" },
+  { name: "Back in the Limelight", brand: "Essie", hex: "#F0A888" },
+  { name: "Cora", brand: "Zoya", hex: "#E89880" },
+  { name: "Meadow", brand: "Zoya", hex: "#F0B0A0" },
+  // ═══ BROWNS ═══
+  { name: "Chocolate Moose", brand: "OPI", hex: "#6B3A2E" },
+  { name: "Squeaker of the House", brand: "OPI", hex: "#8B6045" },
+  { name: "How Great is Your Dane?", brand: "OPI", hex: "#7A5040" },
+  { name: "You Don't Know Jacques!", brand: "OPI", hex: "#5A4038" },
+  { name: "Espresso Your Style", brand: "OPI", hex: "#4A2E22" },
+  { name: "Over the Taupe", brand: "OPI", hex: "#8B7060" },
+  { name: "Don't Bossa Nova Me Around", brand: "OPI", hex: "#5D3A28" },
+  { name: "Hot Cocoa", brand: "Essie", hex: "#6D4C3D" },
+  { name: "Clothing Optional", brand: "Essie", hex: "#9B7B65" },
+  { name: "Coconut Cove", brand: "Sally Hansen", hex: "#7B5B4C" },
+  { name: "Mink Muffs", brand: "Essie", hex: "#7A5B48" },
+  { name: "Chocolate Cakes", brand: "Essie", hex: "#5C3828" },
+  { name: "Take Me to Thread", brand: "Essie", hex: "#8A6855" },
+  { name: "Penny Talk", brand: "Essie", hex: "#906850" },
+  { name: "Foie Gras", brand: "Essie", hex: "#7A6050" },
+  { name: "Demi", brand: "Zoya", hex: "#6B4838" },
+  { name: "Louise", brand: "Zoya", hex: "#8B6850" },
+  { name: "Prince Charming", brand: "ORLY", hex: "#7A5840" },
+  { name: "Hot Cider", brand: "ORLY", hex: "#8A5E38" },
+  // ═══ TAUPES ═══
+  { name: "Icelanded a Bottle of OPI", brand: "OPI", hex: "#9A8878" },
+  { name: "Berlin There Done That", brand: "OPI", hex: "#8A7E78" },
+  { name: "Gadabout", brand: "Essie", hex: "#9A8A7A" },
+  { name: "Mixtaupe", brand: "Essie", hex: "#8E7E72" },
+  { name: "Truth or Bare", brand: "Essie", hex: "#A09088" },
+  { name: "Wild Mink", brand: "Essie", hex: "#887870" },
+  { name: "Mushroom", brand: "Zoya", hex: "#9A8E82" },
+  // ═══ BERRIES / PLUMS ═══
+  { name: "Lincoln Park After Dark", brand: "OPI", hex: "#2D1B2E" },
+  { name: "Vampsterdam", brand: "OPI", hex: "#4A1533" },
+  { name: "Berry Naughty", brand: "OPI", hex: "#7B2D5F" },
+  { name: "Damsel in a Dress", brand: "Essie", hex: "#8B3A62" },
+  { name: "Wicked", brand: "Essie", hex: "#5B1A3A" },
+  { name: "Bahama Mama", brand: "Essie", hex: "#5D2040" },
+  { name: "Knee High Life", brand: "Essie", hex: "#682848" },
+  { name: "Recessionista", brand: "Essie", hex: "#5A2038" },
+  { name: "Sole Mate", brand: "Essie", hex: "#722850" },
+  { name: "Sewer & the City", brand: "Essie", hex: "#4A1830" },
+  { name: "Carry On", brand: "Essie", hex: "#7A3258" },
+  { name: "Genius Maroon", brand: "China Glaze", hex: "#5A1E35" },
+  { name: "Purr-fect Plum", brand: "China Glaze", hex: "#6A2848" },
+  { name: "Erica", brand: "Zoya", hex: "#6B2848" },
+  { name: "Tara", brand: "Zoya", hex: "#782850" },
+  { name: "Plum Noir", brand: "ORLY", hex: "#3A1228" },
+  { name: "Wild Plum", brand: "Sally Hansen", hex: "#5A2040" },
+  // ═══ PURPLES — LIGHT / LAVENDER ═══
+  { name: "Do You Lilac It?", brand: "OPI", hex: "#B08FC7" },
+  { name: "Lavandairy", brand: "Essie", hex: "#C8A2D8" },
+  { name: "Worth the Tassel", brand: "Essie", hex: "#9B7FB8" },
+  { name: "Lilacism", brand: "Essie", hex: "#C4A0CB" },
+  { name: "Nice Is Nice", brand: "Essie", hex: "#B498C8" },
+  { name: "In Pursuit of Craftiness", brand: "Essie", hex: "#D0B8D8" },
+  { name: "Tart Deco Lilac", brand: "China Glaze", hex: "#C0A0D0" },
+  { name: "Abby", brand: "Zoya", hex: "#C8AAD2" },
+  { name: "Julie", brand: "Zoya", hex: "#B898C2" },
+  { name: "Lux", brand: "ORLY", hex: "#C5A8D0" },
+  // ═══ PURPLES — MEDIUM / DEEP ═══
+  { name: "A Grape Fit!", brand: "OPI", hex: "#7B4D8E" },
+  { name: "Sittin' Pretty", brand: "Essie", hex: "#8E6BAD" },
+  { name: "Under Where?", brand: "Essie", hex: "#6C3C7E" },
+  { name: "Flirt with Violet", brand: "Essie", hex: "#8755A1" },
+  { name: "Grape Fizz", brand: "OPI", hex: "#8562A0" },
+  { name: "Purple with a Purpose", brand: "OPI", hex: "#7048A0" },
+  { name: "I Am What I Amethyst", brand: "OPI", hex: "#6A3890" },
+  { name: "Sexy Divide", brand: "OPI", hex: "#4A2468" },
+  { name: "No Shrinking Violet", brand: "Essie", hex: "#6E4098" },
+  { name: "Grape Expectations", brand: "China Glaze", hex: "#6B3888" },
+  { name: "Creative Fantasy", brand: "China Glaze", hex: "#7A4898" },
+  { name: "Landon", brand: "Zoya", hex: "#5A3080" },
+  { name: "Savita", brand: "Zoya", hex: "#7A4898" },
+  { name: "Charged Up", brand: "ORLY", hex: "#7048A0" },
+  // ═══ BLUES — LIGHT / SKY ═══
+  { name: "Blue-Ming", brand: "OPI", hex: "#7BADD4" },
+  { name: "Bikini So Teeny", brand: "Essie", hex: "#6BA3C8" },
+  { name: "Saltwater Happy", brand: "Essie", hex: "#4B8DB5" },
+  { name: "Blue My Mind", brand: "Essie", hex: "#5B8FAF" },
+  { name: "Suggestive & Sultry", brand: "Essie", hex: "#7AA8C8" },
+  { name: "Raindrop", brand: "China Glaze", hex: "#85B5D0" },
+  { name: "Bluebird", brand: "Sally Hansen", hex: "#6A9EC0" },
+  { name: "Skylar", brand: "Zoya", hex: "#7DB0CE" },
+  { name: "Yummy", brand: "Zoya", hex: "#6898B8" },
+  { name: "Glass Half Full", brand: "ORLY", hex: "#78A8C8" },
+  // ═══ BLUES — MEDIUM / NAVY ═══
+  { name: "Rich Girls & Po-Boys", brand: "OPI", hex: "#2C5F8A" },
+  { name: "Butler Please", brand: "Essie", hex: "#3A6B8C" },
+  { name: "Midnight Swim", brand: "Sally Hansen", hex: "#1A3555" },
+  { name: "After School Boy Blazer", brand: "Essie", hex: "#1B2838" },
+  { name: "Aruba Blue", brand: "Essie", hex: "#28588A" },
+  { name: "Midnight Cami", brand: "Essie", hex: "#1E3050" },
+  { name: "Mesmerized", brand: "Essie", hex: "#1C3860" },
+  { name: "Blue Iguana", brand: "China Glaze", hex: "#2855A0" },
+  { name: "First Mate", brand: "China Glaze", hex: "#20456E" },
+  { name: "Song Sung Blue", brand: "Zoya", hex: "#2D5888" },
+  { name: "Sailor", brand: "Zoya", hex: "#1A3858" },
+  { name: "In the Navy", brand: "ORLY", hex: "#182E4A" },
+  { name: "Blue Suede Shoes", brand: "ORLY", hex: "#254880" },
+  { name: "Blue Satin", brand: "Chanel", hex: "#1E3B6A" },
+  // ═══ BLUES — COBALT / ELECTRIC ═══
+  { name: "Dating a Royal", brand: "OPI", hex: "#1E4DBB" },
+  { name: "Argan Everyday", brand: "Essie", hex: "#2248A0" },
+  { name: "Frostbite", brand: "China Glaze", hex: "#2858C0" },
+  { name: "Glow with the Flow", brand: "China Glaze", hex: "#3060C8" },
+  { name: "It's Up to Blue", brand: "ORLY", hex: "#2550B8" },
+  { name: "Sia", brand: "Zoya", hex: "#2848B0" },
+  // ═══ TEALS / TURQUOISE ═══
+  { name: "Is That a Spear in Your Pocket?", brand: "OPI", hex: "#1A6B6B" },
+  { name: "Teal the Cows Come Home", brand: "OPI", hex: "#2D8B8B" },
+  { name: "Naughty Nautical", brand: "Essie", hex: "#2A7B7B" },
+  { name: "In the Cab-ana", brand: "OPI", hex: "#38A8A8" },
+  { name: "This Color's Making Waves", brand: "OPI", hex: "#258888" },
+  { name: "Naughty Nautical", brand: "China Glaze", hex: "#188888" },
+  { name: "For Audrey", brand: "China Glaze", hex: "#68C8C8" },
+  { name: "Turned Up Turquoise", brand: "China Glaze", hex: "#18A8B0" },
+  { name: "Where's My Blanket?", brand: "Essie", hex: "#4EB8B8" },
+  { name: "Zuza", brand: "Zoya", hex: "#30A0A0" },
+  { name: "Tuesday", brand: "Zoya", hex: "#188888" },
+  { name: "It's Up to Blue", brand: "Sally Hansen", hex: "#28A0A8" },
+  // ═══ GREENS — LIGHT / MINT ═══
+  { name: "Cactus Have This Dance", brand: "OPI", hex: "#78A87C" },
+  { name: "Mint Candy Apple", brand: "Essie", hex: "#98D4BB" },
+  { name: "Turquoise & Caicos", brand: "Essie", hex: "#88C8B0" },
+  { name: "Fashion Playground", brand: "Essie", hex: "#80C8A8" },
+  { name: "First Timer", brand: "Essie", hex: "#88D0B8" },
+  { name: "Re-fresh Mint", brand: "China Glaze", hex: "#90D8C0" },
+  { name: "Neely", brand: "Zoya", hex: "#78C8A8" },
+  { name: "Wednesday", brand: "Zoya", hex: "#88D0B0" },
+  { name: "Cool in the Pool", brand: "ORLY", hex: "#80C8B0" },
+  // ═══ GREENS — MEDIUM ═══
+  { name: "Stay Off the Lawn!", brand: "OPI", hex: "#2D6B4E" },
+  { name: "Rated R-tistic", brand: "OPI", hex: "#2E7D5B" },
+  { name: "On the Roadie", brand: "Essie", hex: "#5A8F6E" },
+  { name: "Off Tropic", brand: "Essie", hex: "#40826D" },
+  { name: "Pretty Edgy", brand: "Essie", hex: "#3D6B5E" },
+  { name: "Wanderlust", brand: "China Glaze", hex: "#4A8A68" },
+  { name: "Holly", brand: "Zoya", hex: "#386850" },
+  { name: "Piaf", brand: "Zoya", hex: "#4A8868" },
+  { name: "Lucky Duck", brand: "ORLY", hex: "#48885A" },
+  // ═══ GREENS — DARK / FOREST ═══
+  { name: "Jade Is the New Black", brand: "OPI", hex: "#1A4040" },
+  { name: "Christmas Gone Plaid", brand: "OPI", hex: "#1B4828" },
+  { name: "Holly-Day", brand: "China Glaze", hex: "#183820" },
+  { name: "Glittering Garland", brand: "China Glaze", hex: "#1A4828" },
+  { name: "Hunter", brand: "Zoya", hex: "#1A3828" },
+  { name: "Profound Green", brand: "ORLY", hex: "#1A4030" },
+  { name: "Emerald City", brand: "Sally Hansen", hex: "#1E5038" },
+  // ═══ GREENS — OLIVE / ARMY ═══
+  { name: "Suzi - The First Lady of Nails", brand: "OPI", hex: "#5A6840" },
+  { name: "Exposed", brand: "Essie", hex: "#787858" },
+  { name: "Sew Psyched", brand: "Essie", hex: "#6A7048" },
+  { name: "Camo", brand: "China Glaze", hex: "#5A6838" },
+  { name: "Dree", brand: "Zoya", hex: "#707850" },
+  { name: "Arbor", brand: "Zoya", hex: "#606840" },
+  // ═══ YELLOWS ═══
+  { name: "Sun Sea and Sand", brand: "OPI", hex: "#F5D26E" },
+  { name: "Bee Unapologetic", brand: "OPI", hex: "#E8C840" },
+  { name: "Aim to Misbehave", brand: "Essie", hex: "#F2C94C" },
+  { name: "Check Your Baggage", brand: "Essie", hex: "#C9A93E" },
+  { name: "Sunshine State of Mind", brand: "OPI", hex: "#F0D050" },
+  { name: "I Just Can't Cope-acabana", brand: "OPI", hex: "#F5D878" },
+  { name: "Yellow Polka Dot Bikini", brand: "China Glaze", hex: "#F5E060" },
+  { name: "Happy-Go-Lucky", brand: "China Glaze", hex: "#F8D838" },
+  { name: "Daisy", brand: "Zoya", hex: "#F0D048" },
+  { name: "Pippa", brand: "Zoya", hex: "#F5D860" },
+  // ═══ GOLDS / METALLICS ═══
+  { name: "Dazzling Gold", brand: "Sally Hansen", hex: "#C8A848" },
+  { name: "Goldeneye", brand: "China Glaze", hex: "#C0A038" },
+  { name: "Bling Dynasty", brand: "China Glaze", hex: "#C8A838" },
+  { name: "Ziv", brand: "Zoya", hex: "#C0A048" },
+  { name: "Luxe", brand: "ORLY", hex: "#B89838" },
+  { name: "Rollin' in Cashmere", brand: "Essie", hex: "#B8984A" },
+  { name: "Good as Gold", brand: "Essie", hex: "#B89040" },
+  // ═══ ROSE GOLDS / METALLICS ═══
+  { name: "Comet Closer", brand: "OPI", hex: "#C8988A" },
+  { name: "Made It to the Seventh Hill!", brand: "OPI", hex: "#C0908A" },
+  { name: "Penny Talk", brand: "Essie", hex: "#B87860" },
+  { name: "Buy Me a Cameo", brand: "Essie", hex: "#C8A098" },
+  { name: "Autumn", brand: "Zoya", hex: "#C09080" },
+  // ═══ SILVERS / CHROMES ═══
+  { name: "My Signature is DC", brand: "OPI", hex: "#A8A8B0" },
+  { name: "No More Mr. Night Sky", brand: "Essie", hex: "#A0A0A8" },
+  { name: "Apres Chic", brand: "Essie", hex: "#B0B0B8" },
+  { name: "Cheers to You", brand: "China Glaze", hex: "#A8A8B0" },
+  { name: "Trixie", brand: "Zoya", hex: "#A0A0B0" },
+  // ═══ WHITES / IVORIES ═══
+  { name: "Alpine Snow", brand: "OPI", hex: "#F5F0EB" },
+  { name: "Angel Food", brand: "OPI", hex: "#F7F0EA" },
+  { name: "Kyoto Pearl", brand: "OPI", hex: "#F8F2EA" },
+  { name: "Blanc", brand: "Essie", hex: "#F0EBE3" },
+  { name: "Marshmallow", brand: "Essie", hex: "#F3EDE8" },
+  { name: "Coconut Cove", brand: "Essie", hex: "#F4EEE8" },
+  { name: "Fiji Weejee White", brand: "China Glaze", hex: "#F5F0E8" },
+  { name: "White on White", brand: "China Glaze", hex: "#F8F5F0" },
+  { name: "Purity", brand: "Zoya", hex: "#F5F2EE" },
+  { name: "Snow White", brand: "Sally Hansen", hex: "#F7F4F0" },
+  // ═══ OFF-WHITES / CREAMS ═══
+  { name: "Funny Bunny", brand: "OPI", hex: "#F5E6E0" },
+  { name: "My Vampire is Buff", brand: "OPI", hex: "#EEE0D0" },
+  { name: "Brides to Be", brand: "China Glaze", hex: "#F0E5D8" },
+  { name: "Jacqueline", brand: "Zoya", hex: "#F0E2D5" },
+  { name: "Gel Break Barely Beige", brand: "OPI", hex: "#E8D8C8" },
+  // ═══ GRAYS ═══
+  { name: "Chinchilly", brand: "Essie", hex: "#9B968F" },
+  { name: "Suzi Talks with Her Hands", brand: "OPI", hex: "#A8A09B" },
+  { name: "Engage-Meant", brand: "Essie", hex: "#B5ADA5" },
+  { name: "Cocktail Bling", brand: "Essie", hex: "#8E8880" },
+  { name: "Master Plan", brand: "Essie", hex: "#7A746E" },
+  { name: "Cement the Deal", brand: "OPI", hex: "#8A8580" },
+  { name: "Kristen", brand: "OPI", hex: "#7A7575" },
+  { name: "Pelican Gray", brand: "Sally Hansen", hex: "#888888" },
+  { name: "Recycle", brand: "China Glaze", hex: "#808080" },
+  { name: "Dove", brand: "Zoya", hex: "#A0A0A0" },
+  { name: "Tove", brand: "Zoya", hex: "#8A8888" },
+  // ═══ DARK GRAYS / CHARCOAL ═══
+  { name: "Dark Side of the Mood", brand: "OPI", hex: "#4A4848" },
+  { name: "Cashmere Bathrobe", brand: "Essie", hex: "#5A5858" },
+  { name: "Power Clutch", brand: "Essie", hex: "#4A4545" },
+  { name: "Concrete Catwalk", brand: "China Glaze", hex: "#555555" },
+  { name: "Petra", brand: "Zoya", hex: "#484848" },
+  // ═══ BLACKS ═══
+  { name: "Black Onyx", brand: "OPI", hex: "#1A1A1A" },
+  { name: "Lady in Black", brand: "OPI", hex: "#222222" },
+  { name: "Licorice", brand: "Essie", hex: "#1C1C1C" },
+  { name: "Black Cherry", brand: "Revlon", hex: "#2A1520" },
+  { name: "Liquid Leather", brand: "China Glaze", hex: "#181818" },
+  { name: "Raven", brand: "Zoya", hex: "#1A1A1A" },
+  { name: "Jet", brand: "Sally Hansen", hex: "#161616" },
+  { name: "Liquid Vinyl", brand: "ORLY", hex: "#141414" },
+];
+
+// ─── Color math ───
+function hexToRgb(hex) {
+  return [parseInt(hex.slice(1,3),16), parseInt(hex.slice(3,5),16), parseInt(hex.slice(5,7),16)];
+}
+function rgbToHex(r,g,b) {
+  return '#' + [r,g,b].map(x => x.toString(16).padStart(2,'0')).join('');
+}
+function rgbToLab([r,g,b]) {
+  let rr=r/255, gg=g/255, bb=b/255;
+  rr = rr>0.04045 ? Math.pow((rr+0.055)/1.055,2.4) : rr/12.92;
+  gg = gg>0.04045 ? Math.pow((gg+0.055)/1.055,2.4) : gg/12.92;
+  bb = bb>0.04045 ? Math.pow((bb+0.055)/1.055,2.4) : bb/12.92;
+  let x=(rr*0.4124564+gg*0.3575761+bb*0.1804375)/0.95047;
+  let y=(rr*0.2126729+gg*0.7151522+bb*0.0721750)/1.00000;
+  let z=(rr*0.0193339+gg*0.1191920+bb*0.9503041)/1.08883;
+  const f=t=>t>0.008856?Math.cbrt(t):(7.787*t)+16/116;
+  x=f(x); y=f(y); z=f(z);
+  return [116*y-16, 500*(x-y), 200*(y-z)];
+}
+function deltaE(a,b) {
+  return Math.sqrt((a[0]-b[0])**2 + (a[1]-b[1])**2 + (a[2]-b[2])**2);
+}
+
+// ─── K-means ───
+function extractColors(imageData, k=6) {
+  const pixels=[], data=imageData.data;
+  const step=Math.max(1, Math.floor(data.length/4/5000));
+  for(let i=0;i<data.length;i+=4*step){
+    if(data[i+3]<128) continue;
+    pixels.push([data[i],data[i+1],data[i+2]]);
+  }
+  if(pixels.length<k) return pixels;
+  let centroids=[pixels[Math.floor(Math.random()*pixels.length)]];
+  for(let c=1;c<k;c++){
+    const dists=pixels.map(p=>Math.min(...centroids.map(cen=>(p[0]-cen[0])**2+(p[1]-cen[1])**2+(p[2]-cen[2])**2)));
+    const total=dists.reduce((a,b)=>a+b,0);
+    let r=Math.random()*total;
+    for(let i=0;i<dists.length;i++){r-=dists[i]; if(r<=0){centroids.push([...pixels[i]]);break;}}
+  }
+  for(let iter=0;iter<15;iter++){
+    const clusters=Array.from({length:k},()=>[]);
+    for(const p of pixels){
+      let minD=Infinity,minI=0;
+      for(let i=0;i<k;i++){const d=(p[0]-centroids[i][0])**2+(p[1]-centroids[i][1])**2+(p[2]-centroids[i][2])**2;if(d<minD){minD=d;minI=i;}}
+      clusters[minI].push(p);
+    }
+    for(let i=0;i<k;i++){
+      if(!clusters[i].length) continue;
+      centroids[i]=clusters[i].reduce((a,p)=>[a[0]+p[0],a[1]+p[1],a[2]+p[2]],[0,0,0]).map(v=>Math.round(v/clusters[i].length));
+    }
+  }
+  const sizes=centroids.map(c=>({color:c,count:0}));
+  for(const p of pixels){
+    let minD=Infinity,minI=0;
+    for(let i=0;i<k;i++){const d=(p[0]-centroids[i][0])**2+(p[1]-centroids[i][1])**2+(p[2]-centroids[i][2])**2;if(d<minD){minD=d;minI=i;}}
+    sizes[minI].count++;
+  }
+  sizes.sort((a,b)=>b.count-a.count);
+  const unique=[];
+  for(const item of sizes){
+    const lab=rgbToLab(item.color);
+    if(unique.every(u=>deltaE(rgbToLab(u),lab)>15)) unique.push(item.color);
+  }
+  return unique.slice(0,6);
+}
+
+function findMatches(rgb, count=5) {
+  const targetLab=rgbToLab(rgb);
+  const scored=POLISH_DB.map(p=>({...p, distance:deltaE(targetLab, rgbToLab(hexToRgb(p.hex)))}));
+  scored.sort((a,b)=>a.distance-b.distance);
+  return scored.slice(0,count).map(p=>({...p, matchPercent:Math.max(0,Math.round(100-p.distance*1.5))}));
+}
+
+// ─── State ───
+let extractedColors = [];
+let activeColorIndex = -1;
+let dropperMode = true;
+let fullImage = null;
+
+// ─── DOM ───
+const uploadZone = document.getElementById('uploadZone');
+const fileInput = document.getElementById('fileInput');
+const uploadPrompt = document.getElementById('uploadPrompt');
+const previewContainer = document.getElementById('previewContainer');
+const previewCanvas = document.getElementById('previewCanvas');
+const previewCtx = previewCanvas.getContext('2d', { willReadFrequently: true });
+const btnAutoDetect = document.getElementById('btnAutoDetect');
+const btnDropper = document.getElementById('btnDropper');
+const btnChangePhoto = document.getElementById('btnChangePhoto');
+const dropperHint = document.getElementById('dropperHint');
+const loupe = document.getElementById('loupe');
+const loupeCanvas = document.getElementById('loupeCanvas');
+const loupeCtx = loupeCanvas.getContext('2d', { willReadFrequently: true });
+const loupeColor = document.getElementById('loupeColor');
+const loadingSection = document.getElementById('loadingSection');
+const extractedSection = document.getElementById('extractedSection');
+const colorChips = document.getElementById('colorChips');
+const clearColorsBtn = document.getElementById('clearColorsBtn');
+const resultsSection = document.getElementById('resultsSection');
+const polishGrid = document.getElementById('polishGrid');
+const hiddenCanvas = document.getElementById('colorCanvas');
+const hiddenCtx = hiddenCanvas.getContext('2d', { willReadFrequently: true });
+
+// ─── Upload ───
+uploadZone.addEventListener('click', (e) => {
+  if (uploadZone.classList.contains('has-image')) return;
+  fileInput.click();
+});
+uploadZone.addEventListener('dragover', (e) => { e.preventDefault(); uploadZone.classList.add('dragover'); });
+uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('dragover'));
+uploadZone.addEventListener('drop', (e) => {
+  e.preventDefault(); uploadZone.classList.remove('dragover');
+  if (e.dataTransfer.files.length) processFile(e.dataTransfer.files[0]);
+});
+fileInput.addEventListener('change', () => { if (fileInput.files.length) processFile(fileInput.files[0]); });
+btnChangePhoto.addEventListener('click', (e) => { e.stopPropagation(); fileInput.click(); });
+
+// ─── Mode toggle ───
+btnAutoDetect.addEventListener('click', (e) => {
+  e.stopPropagation();
+  dropperMode = false;
+  btnDropper.classList.remove('active');
+  btnAutoDetect.classList.add('active');
+  dropperHint.classList.remove('visible');
+  previewCanvas.classList.add('default-cursor');
+  if (fullImage) runAutoDetect();
+});
+
+btnDropper.addEventListener('click', (e) => {
+  e.stopPropagation();
+  dropperMode = true;
+  btnAutoDetect.classList.remove('active');
+  btnDropper.classList.add('active');
+  previewCanvas.classList.remove('default-cursor');
+  if (fullImage) {
+    dropperHint.classList.add('visible');
+    setTimeout(() => dropperHint.classList.remove('visible'), 3000);
+  }
+});
+
+clearColorsBtn.addEventListener('click', () => {
+  extractedColors = [];
+  activeColorIndex = -1;
+  renderColors();
+  resultsSection.style.display = 'none';
+  extractedSection.style.display = 'none';
+});
+
+// ─── Process file ───
+function processFile(file) {
+  if (!file.type.startsWith('image/')) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const img = new Image();
+    img.onload = () => {
+      fullImage = img;
+      const maxW = uploadZone.clientWidth || 672;
+      const maxH = 420;
+      const scale = Math.min(maxW / img.width, maxH / img.height, 1);
+      previewCanvas.width = Math.round(img.width * scale);
+      previewCanvas.height = Math.round(img.height * scale);
+      previewCtx.drawImage(img, 0, 0, previewCanvas.width, previewCanvas.height);
+
+      uploadPrompt.style.display = 'none';
+      previewContainer.style.display = 'block';
+      uploadZone.classList.add('has-image');
+
+      extractedColors = [];
+      activeColorIndex = -1;
+      extractedSection.style.display = 'none';
+      resultsSection.style.display = 'none';
+      loadingSection.style.display = 'none';
+
+      if (dropperMode) {
+        dropperHint.classList.add('visible');
+        setTimeout(() => dropperHint.classList.remove('visible'), 3000);
+      } else {
+        runAutoDetect();
+      }
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function runAutoDetect() {
+  loadingSection.style.display = 'block';
+  extractedSection.style.display = 'none';
+  resultsSection.style.display = 'none';
+
+  const maxDim = 300;
+  const scale = Math.min(maxDim / fullImage.width, maxDim / fullImage.height, 1);
+  hiddenCanvas.width = Math.round(fullImage.width * scale);
+  hiddenCanvas.height = Math.round(fullImage.height * scale);
+  hiddenCtx.drawImage(fullImage, 0, 0, hiddenCanvas.width, hiddenCanvas.height);
+  const imageData = hiddenCtx.getImageData(0, 0, hiddenCanvas.width, hiddenCanvas.height);
+
+  setTimeout(() => {
+    extractedColors = extractColors(imageData, 8);
+    activeColorIndex = -1;
+    loadingSection.style.display = 'none';
+    renderColors();
+    if (extractedColors.length > 0) selectColor(0);
+  }, 500);
+}
+
+// ─── Dropper ───
+function getCanvasPos(e) {
+  const rect = previewCanvas.getBoundingClientRect();
+  // touchend has empty touches but populated changedTouches
+  let source;
+  if (e.touches && e.touches.length > 0) {
+    source = e.touches[0];
+  } else if (e.changedTouches && e.changedTouches.length > 0) {
+    source = e.changedTouches[0];
+  } else {
+    source = e;
+  }
+  const x = (source.clientX - rect.left) * (previewCanvas.width / rect.width);
+  const y = (source.clientY - rect.top) * (previewCanvas.height / rect.height);
+  return { x: Math.round(x), y: Math.round(y), clientX: source.clientX, clientY: source.clientY };
+}
+
+function sampleColor(x, y) {
+  // Clamp to canvas bounds
+  x = Math.max(0, Math.min(x, previewCanvas.width - 1));
+  y = Math.max(0, Math.min(y, previewCanvas.height - 1));
+  let rr=0,gg=0,bb=0,count=0;
+  for (let dx=-2; dx<=2; dx++) {
+    for (let dy=-2; dy<=2; dy++) {
+      const px=x+dx, py=y+dy;
+      if (px<0||py<0||px>=previewCanvas.width||py>=previewCanvas.height) continue;
+      const d = previewCtx.getImageData(px,py,1,1).data;
+      rr+=d[0]; gg+=d[1]; bb+=d[2]; count++;
+    }
+  }
+  if (count === 0) return [0, 0, 0];
+  return [Math.round(rr/count), Math.round(gg/count), Math.round(bb/count)];
+}
+
+function showLoupe(pos, rgb) {
+  const loupeSize = 90;
+  const zoomRadius = 7;
+  const zoomDiameter = zoomRadius * 2 + 1;
+  loupeCanvas.width = loupeSize;
+  loupeCanvas.height = loupeSize;
+  loupeCtx.imageSmoothingEnabled = false;
+  loupeCtx.clearRect(0, 0, loupeSize, loupeSize);
+  loupeCtx.drawImage(previewCanvas, pos.x - zoomRadius, pos.y - zoomRadius, zoomDiameter, zoomDiameter, 0, 0, loupeSize, loupeSize);
+
+  const containerRect = previewContainer.getBoundingClientRect();
+  let lx = pos.clientX - containerRect.left - loupeSize/2;
+  let ly = pos.clientY - containerRect.top - loupeSize - 20;
+  if (ly < 0) ly = pos.clientY - containerRect.top + 20;
+  lx = Math.max(0, Math.min(lx, containerRect.width - loupeSize));
+
+  loupe.style.display = 'block';
+  loupe.style.left = lx + 'px';
+  loupe.style.top = ly + 'px';
+  loupe.style.borderColor = rgbToHex(...rgb);
+  loupeColor.textContent = rgbToHex(...rgb).toUpperCase();
+}
+
+function hideLoupe() { loupe.style.display = 'none'; }
+
+previewCanvas.addEventListener('mousemove', (e) => {
+  if (!dropperMode || !fullImage) return;
+  const pos = getCanvasPos(e);
+  const rgb = sampleColor(pos.x, pos.y);
+  showLoupe(pos, rgb);
+});
+previewCanvas.addEventListener('mouseleave', hideLoupe);
+previewCanvas.addEventListener('click', (e) => {
+  if (!dropperMode || !fullImage) return;
+  e.stopPropagation();
+  const pos = getCanvasPos(e);
+  const rgb = sampleColor(pos.x, pos.y);
+  addPickedColor(rgb);
+  hideLoupe();
+  dropperHint.classList.remove('visible');
+});
+
+previewCanvas.addEventListener('touchmove', (e) => {
+  if (!dropperMode || !fullImage) return;
+  e.preventDefault();
+  const pos = getCanvasPos(e);
+  const rgb = sampleColor(pos.x, pos.y);
+  showLoupe(pos, rgb);
+}, { passive: false });
+
+previewCanvas.addEventListener('touchend', (e) => {
+  if (!dropperMode || !fullImage) return;
+  e.preventDefault();
+  const pos = getCanvasPos(e);
+  if (pos.x >= 0 && pos.y >= 0 && pos.x < previewCanvas.width && pos.y < previewCanvas.height) {
+    const rgb = sampleColor(pos.x, pos.y);
+    addPickedColor(rgb);
+  }
+  hideLoupe();
+  dropperHint.classList.remove('visible');
+}, { passive: false });
+
+// ─── Color management ───
+function addPickedColor(rgb) {
+  const lab = rgbToLab(rgb);
+  const existingIdx = extractedColors.findIndex(c => deltaE(rgbToLab(c), lab) < 10);
+  if (existingIdx >= 0) {
+    selectColor(existingIdx);
+    return;
+  }
+  extractedColors.push(rgb);
+  renderColors(true);
+  selectColor(extractedColors.length - 1);
+}
+
+function renderColors(lastIsPicked = false) {
+  colorChips.innerHTML = '';
+  extractedColors.forEach((rgb, i) => {
+    const hex = rgbToHex(...rgb);
+    const chip = document.createElement('div');
+    chip.className = 'color-chip' + (lastIsPicked && i === extractedColors.length - 1 ? ' picked' : '');
+    chip.style.backgroundColor = hex;
+    chip.innerHTML = `
+      <span class="chip-remove" data-index="${i}">&times;</span>
+      <span class="hex-tip">${hex.toUpperCase()}</span>
+    `;
+    chip.addEventListener('click', (e) => {
+      if (e.target.classList.contains('chip-remove')) {
+        removeColor(parseInt(e.target.dataset.index));
+        return;
+      }
+      selectColor(i);
+    });
+    colorChips.appendChild(chip);
+  });
+  extractedSection.style.display = extractedColors.length > 0 ? 'block' : 'none';
+}
+
+function removeColor(index) {
+  extractedColors.splice(index, 1);
+  if (activeColorIndex === index) {
+    activeColorIndex = -1;
+    resultsSection.style.display = 'none';
+  } else if (activeColorIndex > index) {
+    activeColorIndex--;
+  }
+  renderColors();
+  if (extractedColors.length === 0) {
+    extractedSection.style.display = 'none';
+    resultsSection.style.display = 'none';
+  } else if (activeColorIndex >= 0) {
+    selectColor(activeColorIndex);
+  }
+}
+
+function selectColor(index) {
+  activeColorIndex = index;
+  document.querySelectorAll('.color-chip').forEach((c, i) => c.classList.toggle('active', i === index));
+  const rgb = extractedColors[index];
+  const matches = findMatches(rgb, 5);
+  renderMatches(matches);
+}
+
+function renderMatches(matches) {
+  polishGrid.innerHTML = '';
+  if (!matches.length) {
+    polishGrid.innerHTML = '<div class="no-results">No close matches found</div>';
+  } else {
+    matches.forEach(m => {
+      const searchQuery = encodeURIComponent(`${m.brand} ${m.name} nail polish`);
+      const buyUrl = `https://www.google.com/search?tbm=shop&q=${searchQuery}`;
+      const card = document.createElement('div');
+      card.className = 'polish-card';
+      card.innerHTML = `
+        <div class="polish-swatch" style="background-color: ${m.hex}"></div>
+        <div class="polish-info">
+          <div class="polish-name">${m.name}</div>
+          <div class="polish-brand">${m.brand} · ${m.hex.toUpperCase()}</div>
+        </div>
+        <div class="polish-right">
+          <div class="polish-match">${m.matchPercent}%</div>
+          <a class="buy-link" href="${buyUrl}" target="_blank" rel="noopener" onclick="event.stopPropagation()">
+            Buy <svg viewBox="0 0 10 10" fill="none"><path d="M3 1h6v6M9 1L1 9" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </a>
+        </div>
+      `;
+      polishGrid.appendChild(card);
+    });
+  }
+  resultsSection.style.display = 'block';
+}
+</script>
+
+</body>
+</html>
